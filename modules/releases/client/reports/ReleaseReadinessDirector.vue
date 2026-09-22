@@ -218,12 +218,14 @@
           >
             <div class="flex items-center justify-between mb-2">
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide leading-tight">Critical CVEs</p>
-              <span :class="preReleaseCveCount === 0 ? 'bg-green-500' : 'bg-red-500'" class="w-3 h-3 rounded-full inline-block"></span>
+              <span v-if="preReleaseCveCount !== null" :class="preReleaseCveCount === 0 ? 'bg-green-500' : 'bg-red-500'" class="w-3 h-3 rounded-full inline-block"></span>
+              <span v-else class="bg-gray-300 dark:bg-gray-600 w-3 h-3 rounded-full inline-block"></span>
             </div>
             <p class="text-xl font-bold text-gray-900 dark:text-gray-100">{{ preReleaseCveCount !== null ? preReleaseCveCount : '—' }}</p>
-            <div class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-2">
+            <div v-if="preReleaseCveCount !== null" class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-2">
               <div :class="preReleaseCveCount === 0 ? 'bg-green-500' : 'bg-orange-500'" class="h-full transition-all duration-500" style="width: 100%"></div>
             </div>
+            <div v-else class="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden mt-2"></div>
             <div class="flex items-center justify-between mt-1">
               <p class="text-xs text-gray-400 dark:text-gray-500">Fix available</p>
               <span class="text-xs text-orange-500 dark:text-orange-400">View report →</span>
@@ -537,7 +539,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, inject, onMounted, watch, nextTick } from 'vue'
+import { ref, reactive, computed, inject, onMounted, watch } from 'vue'
 import { ArrowLeft, Shield } from 'lucide-vue-next'
 import { useReleaseReadiness } from './composables/useReleaseReadiness'
 import { useReleaseSelector, parseReleaseId } from '../composables/useReleaseSelector.js'
@@ -565,10 +567,7 @@ async function loadPreReleaseCveSummary() {
 }
 
 function navigateToPreReleaseCve() {
-  moduleNav.navigateTo('reports')
-  nextTick(() => {
-    moduleNav.updateParams({ report: 'pre-release-cve' })
-  })
+  moduleNav.navigateTo('reports', { report: 'pre-release-cve' })
 }
 
 const {

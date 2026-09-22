@@ -17,7 +17,8 @@
         </p>
       </div>
       <a
-        :href="data?.source?.url || sourceUrl"
+        v-if="data?.source?.url"
+        :href="data.source.url"
         target="_blank"
         rel="noopener noreferrer"
         class="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-md border transition-colors bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 border-green-200 dark:border-green-700 hover:bg-green-100 dark:hover:bg-green-900/50"
@@ -356,7 +357,6 @@ ChartJS.register(CategoryScale, LinearScale, BarElement, ArcElement, Tooltip, Le
 const nav = inject('moduleNav')
 const { data, loading, error, refreshing, loadData, refresh } = usePreReleaseCve()
 
-const sourceUrl = 'https://docs.google.com/spreadsheets/d/1NXoy5JgYVgSF4noW6252BfQMD7Qlp72YNyMGUzRDI9s/edit#gid=0'
 const selectedVersion = ref(null)
 const searchQuery = ref('')
 const filterSeverity = ref('')
