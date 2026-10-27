@@ -23,9 +23,9 @@
               role="tooltip"
             >
               <p class="font-semibold mb-1.5">How grades are calculated</p>
-              <template v-if="selectedEnv === 'latest' || selectedEnv === 'nightly'">
+              <template v-if="selectedEnv === 'latest'">
                 <p class="mb-1.5">
-                  {{ envLabel(selectedEnv) }} uses official
+                  Konflux builds uses official
                   <span class="underline">Container Health Index</span>
                   (Red Hat article 2803031) from the newest green Konflux clair-scan, not catalog HealthIndex and not a
                   <code class="text-[0.7rem]">latest</code> image tag. Grades will not match Prod for the same image.
@@ -42,6 +42,26 @@
                   <li>F — older than that</li>
                 </ul>
                 <p>Unknown: no succeeded on-push run, no clair-scan (for example FBC), or patched SCAN_OUTPUT with no Clair log. Multi-arch images use the worst A–F among clair-scan TaskRuns.</p>
+              </template>
+              <template v-else-if="selectedEnv === 'nightly'">
+                <p class="mb-1.5">
+                  Nightly builds grades are computed by the
+                  <strong>ec-cve-run-tool</strong> pipeline using Konflux Clair scan data with
+                  <strong>RHEL errata filtering</strong> — only findings covered by a RHEL advisory
+                  count toward the grade. Non-RHEL findings (osv/go, osv/pypi) are excluded.
+                </p>
+                <p class="mb-1.5">
+                  The letter is the age of the oldest <strong>rhel-vex</strong> patched Critical/Important finding.
+                </p>
+                <ul class="list-disc pl-4 space-y-0.5 mb-1.5">
+                  <li>A — no rhel-vex patched Critical/Important</li>
+                  <li>B — oldest Critical ≤ 7d and Important ≤ 30d</li>
+                  <li>C — ≤ 30d / ≤ 90d</li>
+                  <li>D — ≤ 90d / ≤ 365d</li>
+                  <li>E — both ≤ 365d</li>
+                  <li>F — older than that</li>
+                </ul>
+                <p>These grades differ from Prod (catalog HealthIndex) and Konflux builds (on-push clair-scan). CVEs excluded by RHEL errata filtering are shown in the <em>scan note</em> per image.</p>
               </template>
               <template v-else>
                 <p class="mb-1.5">
@@ -223,6 +243,7 @@
                   <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Last updated</th>
                   <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Age</th>
                   <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Vulns</th>
+                  <th v-if="selectedEnv === 'nightly' || selectedEnv === 'latest'" class="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">Scan note</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-gray-200 dark:divide-gray-700">
@@ -261,6 +282,9 @@
                   </td>
                   <td class="px-4 py-2 text-gray-700 dark:text-gray-300">
                     {{ image.vulnerabilityCount != null ? image.vulnerabilityCount : '—' }}
+                  </td>
+                  <td v-if="selectedEnv === 'nightly' || selectedEnv === 'latest'" class="px-4 py-2 text-xs text-gray-500 dark:text-gray-400 italic">
+                    {{ image.scanNote || '—' }}
                   </td>
                 </tr>
               </tbody>
@@ -318,6 +342,12 @@ const currentEnv = computed(() => data.value?.environments?.[selectedEnv.value] 
 const versionOptions = computed(() => {
   const versions = currentEnv.value?.versions || []
   if (!versions.length) return []
+  // Nightly streams come from the ec-cve-run-tool pipeline and are not listed
+  // in the top-level activeStreams (which reflects ProdSec Prod/Stage streams).
+  // Skip the activeStreams filter for nightly to avoid silently dropping versions.
+  if (selectedEnv.value === 'nightly') {
+    return versions.slice().sort((a, b) => String(b.id).localeCompare(String(a.id)))
+  }
   const streams = data.value?.activeStreams || []
   const streamSet = new Set(streams)
   const active = versions.filter(v => streamSet.size === 0 || streamSet.has(v.id))

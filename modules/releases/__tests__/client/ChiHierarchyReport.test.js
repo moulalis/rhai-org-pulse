@@ -246,7 +246,7 @@ describe('ChiHierarchyReport', () => {
     expect(wrapper.text()).toContain('40d')
   })
 
-  it('toggles Nightly builds and shows nightly source plus rhel-vex grading copy', async () => {
+  it('toggles Nightly builds and shows nightly-specific ec-cve-run-tool grading copy', async () => {
     const wrapper = mountReport()
     await flushPromises()
 
@@ -257,7 +257,43 @@ describe('ChiHierarchyReport', () => {
 
     expect(wrapper.text()).toContain('ec-cve-run-tool')
     expect(wrapper.text()).toContain('rhel-vex')
-    expect(wrapper.text()).toContain('Nightly builds uses official')
+    expect(wrapper.text()).toContain('RHEL errata filtering')
+    // Nightly tooltip should NOT show the Konflux on-push clair-scan copy
+    expect(wrapper.text()).not.toContain('Konflux builds uses official')
+    expect(wrapper.text()).not.toContain('on-push run')
+  })
+
+  it('nightly version dropdown shows nightly versions regardless of activeStreams', async () => {
+    // activeStreams only lists rhoai-2.25 and rhoai-3.5 (no rhoai-3.6),
+    // but nightly has rhoai-3.6. The nightly tab must bypass the filter
+    // so rhoai-3.6 still appears in the version dropdown.
+    const wrapper = mountReport()
+    await flushPromises()
+
+    const nightlyBtn = wrapper.findAll('button').find(b => b.text() === 'Nightly builds')
+    await nightlyBtn.trigger('click')
+    await flushPromises()
+
+    const select = wrapper.find('#chi-version')
+    expect(select.exists()).toBe(true)
+    const options = select.findAll('option')
+    expect(options.length).toBeGreaterThan(0)
+    expect(options.some(o => o.element.value === 'rhoai-3.6')).toBe(true)
+  })
+
+  it('nightly image table shows Scan note column', async () => {
+    const wrapper = mountReport()
+    await flushPromises()
+
+    const nightlyBtn = wrapper.findAll('button').find(b => b.text() === 'Nightly builds')
+    await nightlyBtn.trigger('click')
+    await flushPromises()
+
+    const compBtn = wrapper.findAll('button').find(b => b.text().includes('AI Core Dashboard'))
+    await compBtn.trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Scan note')
   })
 
   it('toggles Konflux builds and shows Konflux source plus rhel-vex grading copy', async () => {
