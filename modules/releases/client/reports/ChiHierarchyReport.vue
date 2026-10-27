@@ -346,12 +346,16 @@ const versionOptions = computed(() => {
   // in the top-level activeStreams (which reflects ProdSec Prod/Stage streams).
   // Skip the activeStreams filter for nightly to avoid silently dropping versions.
   if (selectedEnv.value === 'nightly') {
-    return versions.slice().sort((a, b) => String(b.id).localeCompare(String(a.id)))
+    return versions
+      .slice()
+      .sort((a, b) => String(b.id).localeCompare(String(a.id), undefined, { numeric: true }))
   }
   const streams = data.value?.activeStreams || []
   const streamSet = new Set(streams)
   const active = versions.filter(v => streamSet.size === 0 || streamSet.has(v.id))
-  return (active.length ? active : versions).slice().sort((a, b) => String(b.id).localeCompare(String(a.id)))
+  return (active.length ? active : versions)
+    .slice()
+    .sort((a, b) => String(b.id).localeCompare(String(a.id), undefined, { numeric: true }))
 })
 
 const currentVersion = computed(() => {
